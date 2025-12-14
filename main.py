@@ -4,7 +4,9 @@ import time
 import random
 pygame.font.init()
 pygame.init()
-
+pygame.mixer.init()
+shoot_sound = pygame.mixer.Sound("/Users/hardikshah/Desktop/shooting_game_pygame/retro-laser-1-236669.mp3")
+shoot_sound.set_volume(0.3)
 w = 500
 h = 800
 chances = 3
@@ -49,6 +51,7 @@ class Player():
             bx = self.x+self.img.get_width()//2 - self.laser.get_width()//2
             by = self.y
             self.bullets.append([bx, by])
+            shoot_sound.play()
             self.cool_down = 20
 
     def cool_down_dec(self):
@@ -185,6 +188,16 @@ def draw(chances):
                 enemy.bullets.remove(bullet)
                 player.health -= 5
                 break #so that same bullet is not removed from the list again so it doenst crash
+
+    #player hitting enemies
+    for enemy in enemies[:]:
+        ox = player.x - enemy.x
+        oy = player.y - enemy.y
+        if player.mask.overlap(enemy.mask, (ox, oy)):
+            enemies.remove(enemy)
+            print("hit")
+            player.health -= 10
+            break
 
     label_enemy_kill_count = main_font.render(f"Kill Count : {player.enemy_kC}", 1, (255, 255, 255))
     screen.blit(label_enemy_kill_count, (w-10 - label_enemy_kill_count.get_width(), 10))
