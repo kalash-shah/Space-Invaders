@@ -28,6 +28,7 @@ title_image = pygame.transform.scale(pygame.image.load("/Users/hardikshah/Deskto
 player_bullet_mask = pygame.mask.from_surface(player_laser)
 enemy_bullet_mask = pygame.mask.from_surface(red_laser)
 loosing_bg = pygame.transform.scale(pygame.image.load("/Users/hardikshah/Desktop/shooting_game_pygame/Screenshot_2025-12-14_at_11.26.42_AM-removebg-preview.png"), (w, 200))
+
 class Player():
     def __init__(self, x, y, img, laser):
         self.x = x
@@ -43,6 +44,9 @@ class Player():
         self.max_health = 100
         self.health = 100
         self.enemy_kC = 0
+        self.bx = 0
+        self.by = 0
+
     def draw(self, win):
         win.blit(self.img, (self.x, self.y))
 
@@ -130,7 +134,7 @@ def loosing_window(font):
 
 def reset_game():
     global chances, enemies
-    chances = 5
+    chances = 3
     enemies.clear()
     player.health = player.max_health
     player.enemy_kC = 0
@@ -168,16 +172,16 @@ def draw(chances):
     
     for enemy in enemies[:]:
         for bullet in player.bullets[:]:
+            if enemy.y>0 and enemy.y<h:
+                offset_x = enemy.x - bullet[0]
+                offset_y = enemy.y - bullet[1]
 
-            offset_x = enemy.x - bullet[0]
-            offset_y = enemy.y - bullet[1]
-
-            #when player bullets hit enemy
-            if enemy.mask.overlap(player.mask, (offset_x, offset_y)):
-                enemies.remove(enemy)
-                player.bullets.remove(bullet)
-                player.enemy_kC += 1
-                break
+                #when player bullets hit enemy
+                if enemy.mask.overlap(player_bullet_mask, (offset_x, offset_y)):
+                    enemies.remove(enemy)
+                    player.bullets.remove(bullet)
+                    player.enemy_kC += 1
+                    break
 
     #when bullets hit player
     for enemy in enemies:
@@ -238,7 +242,7 @@ def main():
                 player.y += player.speed
             player.cool_down_dec()
 
-            if keys[pygame.K_k]:
+            if keys[pygame.K_SPACE]:
                 player.lasers()
             player.laser_movement()
             chances = draw(chances)
