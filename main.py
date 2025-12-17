@@ -10,13 +10,16 @@ shoot_sound.set_volume(0.3)
 w = 500
 h = 800
 chances = 3
+n = 1
 game_state = "menu"
+
 main_font = pygame.font.SysFont("timesnewroman", 30)
 player_spaceship = pygame.transform.scale(pygame.image.load("/Users/hardikshah/Desktop/shooting_game_pygame/Screenshot_2025-12-12_at_9.29.05_PM-removebg-preview.png"), (100, 100)) 
 #enemies
 blue_enemy_spaceship = pygame.image.load("/Users/hardikshah/Desktop/shooting_game_pygame/assets/pixel_ship_blue_small.png")
 red_enemy_spaceship = pygame.image.load("/Users/hardikshah/Desktop/shooting_game_pygame/assets/pixel_ship_red_small.png")
 green_enemy_spaceship = pygame.image.load("/Users/hardikshah/Desktop/shooting_game_pygame/assets/pixel_ship_green_small.png")
+yellow_enemy_spaceship = pygame.image.load("/Users/hardikshah/Desktop/shooting_game_pygame/assets/pixel_ship_yellow.png")
 #bg
 background = pygame.transform.scale(pygame.image.load("/Users/hardikshah/Desktop/shooting_game_pygame/assets/background-black.png"), (w, h))
 #bullets
@@ -28,6 +31,7 @@ title_image = pygame.transform.scale(pygame.image.load("/Users/hardikshah/Deskto
 player_bullet_mask = pygame.mask.from_surface(player_laser)
 enemy_bullet_mask = pygame.mask.from_surface(red_laser)
 loosing_bg = pygame.transform.scale(pygame.image.load("/Users/hardikshah/Desktop/shooting_game_pygame/Screenshot_2025-12-14_at_11.26.42_AM-removebg-preview.png"), (w, 200))
+screen = pygame.display.set_mode((w, h))
 
 class Player():
     def __init__(self, x, y, img, laser):
@@ -78,7 +82,8 @@ class Enemies():
     enemy_attributes = {
         "red" : [red_enemy_spaceship, red_laser],
         "blue" : [blue_enemy_spaceship, blue_laser],
-        "green" : [green_enemy_spaceship, green_laser]
+        "green" : [green_enemy_spaceship, green_laser],
+        "yellow": [yellow_enemy_spaceship, player_laser]
     }
     def __init__(self, x, y, colour):
         self.x = x
@@ -119,10 +124,23 @@ class Enemies():
             bullet[1] += self.bullet_speed
             if bullet[1] > h:
                 self.bullets.remove(bullet)
-    
+
+class BossEnemy(Enemies):
+    def __init__(self, x, y):
+        super().__init__(x, y, "yellow")
+        self.max_health = 25
+        self.health = 25
+        self.speed = 2
+
+    def health_bar(self, window):
+        pygame.draw.rect(window, (255, 0, 0), (self.x, self.y-self.img.get_height()+80, self.img.get_width(), 10))
+        pygame.draw.rect(window, (0, 255, 0), (self.x, self.y-self.img.get_height()+80, self.img.get_width() * (1 - ((self.max_health - self.health)/self.max_health)), 10))
+
 player = Player(300, 650, player_spaceship, player_laser)
 enemies = []
 batch_size = 5
+benemy = []
+
 def loosing_window(font):
     screen.fill((0, 0, 0))
     replay_label = font.render("Press any Key to play again.", 1, (255, 255, 255))
@@ -133,16 +151,17 @@ def loosing_window(font):
     pygame.display.update()
 
 def reset_game():
-    global chances, enemies
+    global chances, enemies, n
     chances = 3
     enemies.clear()
     player.health = player.max_health
     player.enemy_kC = 0
     player.bullets.clear()
     player.x, player.y = 300, 650
-
+    n = 1
 
 def draw(chances):
+    global n, sheild_start_time
     screen.blit(background, (0, 0))
 
     if len(enemies) == 0:
@@ -166,15 +185,14 @@ def draw(chances):
         for bullets in enemy.bullets[:]:
             screen.blit(enemy.laser, [bullets[0], bullets[1]])
 
-
     for bullet in player.bullets:
         screen.blit(player.laser, [bullet[0], bullet[1]])
     
     for enemy in enemies[:]:
         for bullet in player.bullets[:]:
             if enemy.y>0 and enemy.y<h:
-                offset_x = enemy.x - bullet[0]
-                offset_y = enemy.y - bullet[1]
+                offset_x =  bullet[0] - enemy.x
+                offset_y =  bullet[1] - enemy.y 
 
                 #when player bullets hit enemy
                 if enemy.mask.overlap(player_bullet_mask, (offset_x, offset_y)):
@@ -203,6 +221,62 @@ def draw(chances):
             player.health -= 10
             break
 
+    if player.enemy_kC == n*10:
+        enemy_color = "yellow"
+        enemy = BossEnemy(random.randrange(100, w-100), random.randrange(-1500, -100))
+        benemy.append(enemy)
+        n += 1 
+    
+    for enemy in benemy[:]:
+        enemy.movement()
+        enemy.draw(screen)
+        enemy.health_bar(screen)
+        if enemy.off_screen():
+            benemy.remove(enemy)
+            chances -= 1
+
+        enemy.coool_down_control()
+        if enemy.y > 0 and enemy.y < h:
+            enemy.shoot()
+        enemy.laser_movement()
+    
+        for bullets in enemy.bullets[:]:
+            screen.blit(enemy.laser, [bullets[0], bullets[1]])
+    
+    for enemy in benemy[:]:
+        for bullet in player.bullets[:]:
+            if enemy.y>0 and enemy.y<h:
+                offset_x =  bullet[0] - enemy.x
+                offset_y =  bullet[1] - enemy.y 
+
+                #when player bullets hit enemy
+                if enemy.mask.overlap(player_bullet_mask, (offset_x, offset_y)):
+                    player.bullets.remove(bullet)
+                    enemy.health -= 5 
+                    if enemy.health == 0:
+                        benemy.remove(enemy)
+                        player.enemy_kC += 5
+                    break
+
+    for enemy in benemy[:]:
+        ox = player.x - enemy.x
+        oy = player.y - enemy.y
+        if player.mask.overlap(enemy.mask, (ox, oy)):
+            benemy.remove(enemy)
+            print("hit")
+            player.health -= 20
+            break
+    #when bullets hit player
+    for enemy in enemies:
+        for bullet in enemy.bullets[:]:
+            ox = player.x - bullet[0]
+            oy = player.y - bullet[1]
+            if player.mask.overlap(enemy_bullet_mask, (ox, oy)):
+                enemy.bullets.remove(bullet)
+                player.health -= 5
+                break
+
+
     label_enemy_kill_count = main_font.render(f"Kill Count : {player.enemy_kC}", 1, (255, 255, 255))
     screen.blit(label_enemy_kill_count, (w-10 - label_enemy_kill_count.get_width(), 10))
     player.healthbar(screen)
@@ -212,7 +286,7 @@ def draw(chances):
     pygame.display.update()
     return chances
 
-screen = pygame.display.set_mode((w, h))
+
 clock = pygame.time.Clock()
 
 def main():
@@ -244,10 +318,11 @@ def main():
 
             if keys[pygame.K_SPACE]:
                 player.lasers()
+
             player.laser_movement()
             chances = draw(chances)
         
-            if chances <= 0 or player.health == 0:
+            if chances <= 0 or player.health <= 0:
                 game_state = "lose"
 
         if game_state == "lose":
@@ -257,7 +332,6 @@ def main():
 
 def main_menu():
     heading_font = pygame.font.SysFont("timesnewroman", 20)
-
     screen.blit(background, (0, 0))
     title_lable = heading_font.render("Press any Key to start the game..", 1, (255, 255, 255))
     screen.blit(title_lable, (w/2 - title_lable.get_width()/2, 600))
