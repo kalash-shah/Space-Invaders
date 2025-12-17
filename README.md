@@ -8,6 +8,9 @@ This is a simple **2D space shooter game** made using **Python and Pygame**.
 - You control a spaceship
 - Enemies spawn from the top and shoot bullets
 - You can shoot enemies to destroy them
+- After eliminating every 10 enemy spaceship, 1 big/boss spaceship is spawned with less speed but with a health bar
+- Killing the big spaceship is equivalent to killing 5 small spaceships
+- Hitting spaceships with player spaceship will damage the player spaceship but the enemy spaceship will get deleted
 - You have limited chances and health
 - When either reaches zero, the game ends
 - You can restart the game from the Game Over screen
