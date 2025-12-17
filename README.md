@@ -26,7 +26,7 @@ The game has three states:
 | Key | Action |
 |----|-------|
 | W / A / S / D | Move the spaceship |
-| K | Shoot |
+| Space Bar | Shoot |
 | Any Key | Start or restart the game |
 | Close Window | Quit the game |
 
